@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Express — L'IA qui carbure à vos idées</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* component-level styles that depend on layout */
+    .hist-item:hover { background: oklch(1 0 0 / 0.05) !important; color: var(--text) !important; }
+    .acct-row {
+      width: 100%; display: flex; align-items: center; gap: 10px; border: none; background: transparent;
+      color: var(--text-dim); cursor: pointer; padding: 10px 11px; border-radius: 9px; font-size: 13.5px;
+      font-family: var(--font-body); transition: all .15s;
+    }
+    .acct-row:hover { background: oklch(1 0 0 / 0.06); color: var(--text); }
+    .suggest-card { transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .25s; }
+    .suggest-card:hover { transform: translateY(-2px); border-color: var(--border-bright); box-shadow: 0 14px 36px -18px oklch(0 0 0 / 0.6); }
+    .composer:focus-within { border-color: var(--accent) !important; box-shadow: 0 0 0 3px oklch(0.80 0.150 218 / 0.14); }
+    .composer-ta::placeholder { color: var(--text-faint); }
+
+    /* responsive */
+    @media (max-width: 900px) {
+      .auth-grid { grid-template-columns: 1fr !important; }
+      .auth-left { display: none !important; }
+      .app-grid { grid-template-columns: 0 1fr !important; }
+      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 276px; z-index: 30; transform: translateX(-100%); transition: transform .3s var(--ease); }
+      .plan-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="i18n.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="chat-helpers.jsx"></script>
+  <script type="text/babel" src="auth.jsx"></script>
+  <script type="text/babel" src="chat.jsx"></script>
+  <script type="text/babel" src="paywall.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <!-- Frozen-timeline guard: if CSS animations never advance (offscreen/throttled
+       iframe), disable them so content reverts to its visible base state.
+       In a normal visible tab the timeline advances and animations play fully. -->
+  <script>
+    (function () {
+      function check(tries) {
+        try {
+          var a = document.getAnimations ? document.getAnimations() : [];
+          if (a.length && a.every(function (x) { return (x.currentTime || 0) === 0; })) {
+            var s = document.createElement('style');
+            s.id = '__frozen-guard';
+            s.textContent = '*{animation:none !important; opacity:1 !important;}';
+            document.head.appendChild(s);
+          } else if (!a.length && tries < 6) {
+            setTimeout(function () { check(tries + 1); }, 400);
+          }
+        } catch (e) {}
+      }
+      setTimeout(function () { check(0); }, 1600);
+    })();
+  </script>
+</body>
+</html>
