@@ -49,7 +49,7 @@ function App() {
 
       {screen === 'auth'
         ? <AuthScreen t={t} lang={lang} setLang={setLang} onAuth={onAuth} />
-        : <ChatApp t={t} lang={lang} setLang={setLang} user={user || { name: 'Alex', email: 'alex@exemple.com' }}
+        : <ChatApp t={t} lang={lang} setLang={setLang} user={user || { name: lang === 'fr' ? 'Utilisateur' : 'User', email: '' }}
             usedKB={usedKB} quotaKB={quotaKB} addUsage={addUsage} onRefill={() => setPaywall(true)} onSignout={onSignout} />}
 
       {paywall && <Paywall t={t} lang={lang} low={remaining > 0} onClose={() => setPaywall(false)} onPaid={onPaid} />}

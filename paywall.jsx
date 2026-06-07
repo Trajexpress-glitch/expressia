@@ -5,17 +5,17 @@
 function planList(t) {
   return [
     {
-      id: 'starter', name: 'Starter', price: '9', accent: 'var(--accent-3)',
+      id: 'starter', name: 'Starter', price: '6', accent: 'var(--accent-3)',
       desc: t.plan_starter_d,
       feats: [`2 Go ${t.feat_kb}`, t.feat_text, `200 ${t.feat_img_n}`, t.feat_code],
     },
     {
-      id: 'pro', name: 'Pro', price: '24', accent: 'var(--accent)', popular: true,
+      id: 'pro', name: 'Pro', price: '20', accent: 'var(--accent)', popular: true,
       desc: t.plan_pro_d,
       feats: [`12 Go ${t.feat_kb}`, t.feat_text, t.feat_img_unl, t.feat_code, t.feat_speed],
     },
     {
-      id: 'max', name: 'Max', price: '59', accent: 'var(--accent-2)',
+      id: 'max', name: 'Max', price: '50', accent: 'var(--accent-2)',
       desc: t.plan_max_d,
       feats: [`50 Go ${t.feat_kb}`, t.feat_text, t.feat_img_unl, t.feat_code, t.feat_speed, t.feat_support],
     },
@@ -78,7 +78,7 @@ function Paywall({ t, lang, low, onClose, onPaid }) {
                   </div>
                   <p className="faint" style={{ fontSize: 13, lineHeight: 1.5, minHeight: 38 }}>{p.desc}</p>
                   <div className="row" style={{ alignItems: 'baseline', gap: 4, margin: '14px 0 18px' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 40, letterSpacing: '-0.03em' }}>{p.price}€</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 40, letterSpacing: '-0.03em' }}>${p.price}</span>
                     <span className="faint" style={{ fontSize: 14 }}>{t.per_month}</span>
                   </div>
                   <div className="col" style={{ gap: 10, flex: 1, marginBottom: 20 }}>
@@ -110,7 +110,7 @@ function Paywall({ t, lang, low, onClose, onPaid }) {
                 <div style={{ fontWeight: 600, fontFamily: 'var(--font-display)' }}>AI Express {plan.name}</div>
                 <div className="faint" style={{ fontSize: 12.5 }}>{plan.feats[0]}</div>
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22 }}>{plan.price}€<span className="faint" style={{ fontSize: 13, fontWeight: 400 }}>{t.per_month}</span></div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22 }}>${plan.price}<span className="faint" style={{ fontSize: 13, fontWeight: 400 }}>{t.per_month}</span></div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
@@ -133,7 +133,7 @@ function Paywall({ t, lang, low, onClose, onPaid }) {
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={busy} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 15.5 }}>
-              {busy ? <span className="mono">{t.processing}</span> : <><Ic.lock style={{ width: 16, height: 16 }} /> {t.pay_now} · {plan.price}€</>}
+              {busy ? <span className="mono">{t.processing}</span> : <><Ic.lock style={{ width: 16, height: 16 }} /> {t.pay_now} · ${plan.price}</>}
             </button>
             <div className="row" style={{ justifyContent: 'center', gap: 8, marginTop: 16, color: 'var(--text-faint)', fontSize: 12 }}>
               <Ic.lock style={{ width: 13, height: 13 }} /> {t.pw_secure}

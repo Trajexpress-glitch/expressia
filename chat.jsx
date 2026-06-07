@@ -123,7 +123,7 @@ function ChatApp({ t, lang, setLang, user, usedKB, quotaKB, addUsage, onRefill, 
             </span>
             <span style={{ textAlign: 'left', overflow: 'hidden' }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
-              <div className="faint" style={{ fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+              {user.email ? <div className="faint" style={{ fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div> : null}
             </span>
           </button>
         </div>

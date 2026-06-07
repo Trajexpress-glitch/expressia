@@ -4,19 +4,26 @@
 
 function AuthScreen({ t, lang, setLang, onAuth }) {
   const [mode, setMode] = useState('signup'); // 'signin' | 'signup'
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', address: '' });
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(null); // { reason, by, detail }
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const valid = form.email.includes('@') && form.password.length >= 4 && (mode === 'signin' || form.name.trim());
-
-  const submit = (e) => {
+  const submit = async (e) => {
     e && e.preventDefault();
-    if (!valid && mode === 'signup') { /* allow google fast-path even if invalid */ }
+    if (busy) return;
     setBusy(true);
-    setTimeout(() => {
-      onAuth({ name: form.name || (form.email.split('@')[0] || 'Alex'), email: form.email || 'alex@exemple.com' });
-    }, 700);
+    // Anti-fraud / multi-account gate (IP + device + home address)
+    const verdict = await AF.evaluate({ email: form.email, address: form.address, mode });
+    if (!verdict.ok) {
+      setBusy(false);
+      setBlocked(verdict);
+      return;
+    }
+    onAuth({
+      name: form.name.trim() || (form.email.split('@')[0] || (lang === 'fr' ? 'Utilisateur' : 'User')),
+      email: form.email.trim(),
+    });
   };
 
   const features = [
@@ -26,6 +33,7 @@ function AuthScreen({ t, lang, setLang, onAuth }) {
   ];
 
   return (
+    <>
     <div style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'grid', gridTemplateColumns: 'minmax(0, 1.05fr) minmax(440px, 0.95fr)' }} className="auth-grid">
       {/* ---- Left: pitch ---- */}
       <div style={{ padding: 'clamp(28px, 5vw, 64px)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }} className="auth-left">
@@ -103,13 +111,26 @@ function AuthScreen({ t, lang, setLang, onAuth }) {
             <label className="label">{t.email}</label>
             <input className="field" type="email" placeholder={t.email_ph} value={form.email} onChange={set('email')} />
           </div>
-          <div style={{ marginBottom: 22 }}>
+          {mode === 'signup' && (
+            <div style={{ marginBottom: 16, animation: 'fadeUp .3s var(--ease) both' }}>
+              <label className="label">{t.address}</label>
+              <input className="field" placeholder={t.address_ph} value={form.address} onChange={set('address')} />
+            </div>
+          )}
+          <div style={{ marginBottom: mode === 'signup' ? 16 : 22 }}>
             <label className="label">{t.password}</label>
             <input className="field" type="password" placeholder={t.password_ph} value={form.password} onChange={set('password')} />
           </div>
 
+          {mode === 'signup' && (
+            <div className="row gap-2" style={{ marginBottom: 20, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border-soft)', background: 'oklch(0.80 0.150 218 / 0.06)', alignItems: 'flex-start' }}>
+              <Ic.lock style={{ width: 15, height: 15, color: 'var(--accent)', flex: 'none', marginTop: 1 }} />
+              <span className="faint" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{t.security_note}</span>
+            </div>
+          )}
+
           <button type="submit" className="btn btn-primary" disabled={busy} style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: 15.5 }}>
-            {busy ? <span className="mono">···</span> : <>{mode === 'signup' ? t.signup : t.signin} <Ic.bolt style={{ width: 16, height: 16 }} /></>}
+            {busy ? <span className="mono">{t.verifying}</span> : <>{mode === 'signup' ? t.signup : t.signin} <Ic.bolt style={{ width: 16, height: 16 }} /></>}
           </button>
 
           <div className="row gap-3" style={{ margin: '20px 0', color: 'var(--text-faint)', fontSize: 12.5 }}>
@@ -122,6 +143,62 @@ function AuthScreen({ t, lang, setLang, onAuth }) {
 
           <p className="faint" style={{ fontSize: 12, lineHeight: 1.6, marginTop: 20, textAlign: 'center' }}>{t.terms}</p>
         </form>
+      </div>
+    </div>
+    {blocked && (
+      <BlockedOverlay t={t} blocked={blocked}
+        onSignin={() => { setBlocked(null); setMode('signin'); }}
+        onClose={() => setBlocked(null)} />
+    )}
+    </>
+  );
+}
+
+/* ---------- Refusal overlay (anti-fraud) ---------- */
+function BlockedOverlay({ t, blocked, onSignin, onClose }) {
+  const exists = blocked.reason === 'exists';
+  const msg = exists ? t.exists_sub
+    : blocked.by === 'address' ? t.blocked_addr
+    : blocked.by === 'ip' ? t.blocked_ip
+    : t.blocked_device;
+  const accent = exists ? 'var(--warn)' : 'var(--danger)';
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center', padding: 24,
+      background: 'oklch(0.10 0.02 258 / 0.8)', backdropFilter: 'blur(10px)', animation: 'fadeIn .25s ease both' }}>
+      <div className="panel" style={{ width: '100%', maxWidth: 440, padding: 'clamp(28px, 4vw, 40px)', textAlign: 'center', position: 'relative', animation: 'popIn .35s var(--ease) both' }}>
+        <button onClick={onClose} className="center" style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 99, border: '1px solid var(--border-soft)', background: 'oklch(1 0 0 / 0.05)', color: 'var(--text-dim)', cursor: 'pointer' }}>
+          <Ic.close style={{ width: 15, height: 15 }} />
+        </button>
+        <div className="center" style={{ width: 68, height: 68, borderRadius: 20, margin: '4px auto 20px', background: `oklch(0.68 0.19 24 / 0.14)`, border: `1px solid ${accent}` }}>
+          <Ic.lock style={{ width: 32, height: 32, color: accent }} />
+        </div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em' }}>
+          {exists ? t.exists_h : t.blocked_h}
+        </h2>
+        <p className="dim" style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 10 }}>{msg}</p>
+        {!exists && (
+          <p className="dim" style={{ fontSize: 14, lineHeight: 1.6, marginTop: 8 }}>{t.blocked_sub}</p>
+        )}
+
+        {!exists && blocked.detail && (
+          <div className="col gap-2" style={{ marginTop: 18, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'oklch(1 0 0 / 0.03)', textAlign: 'left' }}>
+            <div className="row" style={{ justifyContent: 'space-between', fontSize: 12.5 }}>
+              <span className="faint">{t.detected_ip}</span>
+              <span className="mono" style={{ color: 'var(--text-dim)' }}>{blocked.detail.ip}</span>
+            </div>
+            <div className="row" style={{ justifyContent: 'space-between', fontSize: 12.5 }}>
+              <span className="faint">{t.blocked_existing}</span>
+              <span className="mono" style={{ color: 'var(--text-dim)' }}>{blocked.detail.email}</span>
+            </div>
+          </div>
+        )}
+
+        <button className="btn btn-primary" onClick={onSignin} style={{ width: '100%', justifyContent: 'center', marginTop: 22 }}>
+          <Ic.user style={{ width: 16, height: 16 }} /> {t.go_signin}
+        </button>
+        <button className="btn btn-ghost" onClick={onClose} style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}>
+          {t.try_other}
+        </button>
       </div>
     </div>
   );
