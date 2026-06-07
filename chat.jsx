@@ -37,11 +37,33 @@ function ChatApp({ t, lang, setLang, user, usedKB, quotaKB, addUsage, onRefill, 
     const msgs = [{ role: 'user', content: sys + "\n\n---\n" }];
     history.slice(-6).forEach((h) => msgs.push({ role: h.role === 'ai' ? 'assistant' : 'user', content: typeof h.content === 'string' ? h.content : prompt }));
     msgs.push({ role: 'user', content: prompt });
+
+    // 1) Aperçu de conception : pont IA intégré.
+    if (window.claude && typeof window.claude.complete === 'function') {
+      try {
+        const out = await window.claude.complete({ messages: msgs });
+        return (out || '').trim() || "…";
+      } catch (e) {
+        console.error('[AI Express] bridge error:', e);
+        return lang === 'fr' ? "Désolé, une erreur est survenue. Réessayez." : "Sorry, something went wrong. Please try again.";
+      }
+    }
+
+    // 2) Site déployé : appelle VOTRE route serveur /api/generate (OpenAI).
     try {
-      const out = await window.claude.complete({ messages: msgs });
-      return (out || '').trim() || "…";
+      const r = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: m, messages: msgs }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+      return (data.content || '').trim() || "…";
     } catch (e) {
-      return lang === 'fr' ? "Désolé, une erreur est survenue. Réessayez." : "Sorry, something went wrong. Please try again.";
+      console.error('[AI Express] /api/generate error:', e);
+      return lang === 'fr'
+        ? "⚙️ **IA indisponible.** Le serveur n'a pas pu générer de réponse. Vérifiez que la route `/api/generate` est déployée et que la variable `OPENAI_API_KEY` est définie sur Vercel."
+        : "⚙️ **AI unavailable.** The server could not generate a response. Make sure the `/api/generate` route is deployed and `OPENAI_API_KEY` is set on Vercel.";
     }
   }
 
@@ -67,7 +89,8 @@ function ChatApp({ t, lang, setLang, user, usedKB, quotaKB, addUsage, onRefill, 
     else kb = bytesKB(reply);                                  // plain text ~ small
     kb = Math.round(kb * 10) / 10;
 
-    const aiMsg = { role: 'ai', mode: m, content: reply, kb, seed: Math.floor(Math.random() * 999) };
+    const isUrl = m === 'image' && /^https?:\/\//.test(reply);
+    const aiMsg = { role: 'ai', mode: m, content: reply, prompt, imageUrl: isUrl ? reply : null, kb, seed: Math.floor(Math.random() * 999) };
     setMessages((prev) => [...prev, aiMsg]);
     setBusy(false);
     addUsage(kb);
@@ -233,7 +256,7 @@ function Message({ msg, t, renderRich, ImageResult, onRegen }) {
           ? { background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '16px 16px 4px 16px', padding: '12px 16px', fontSize: 15.5, lineHeight: 1.6 }
           : { padding: '15px 18px', borderRadius: '4px 16px 16px 16px', fontSize: 15 }}>
           {msg.mode === 'image' && !isUser
-            ? <ImageResult prompt={msg.content} t={t} seed={msg.seed || 1} />
+            ? <ImageResult prompt={msg.prompt || msg.content} imageUrl={msg.imageUrl} t={t} seed={msg.seed || 1} />
             : (isUser ? msg.content : renderRich(msg.content, t))}
         </div>
         {!isUser && onRegen && msg.mode !== 'image' && (

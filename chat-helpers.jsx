@@ -70,9 +70,22 @@ function CodeBlock({ code, lang, t }) {
   );
 }
 
-/* ----- AI image placeholder card ----- */
-function ImageResult({ prompt, t, seed }) {
+/* ----- AI image card (real image if a URL is provided, else placeholder) ----- */
+function ImageResult({ prompt, t, seed, imageUrl }) {
   const hue1 = (seed * 47) % 360, hue2 = (hue1 + 60) % 360;
+  const isUrl = typeof imageUrl === 'string' && /^https?:\/\//.test(imageUrl);
+  if (isUrl) {
+    return (
+      <div style={{ marginTop: 4 }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 420, aspectRatio: '1 / 1', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', background: 'oklch(0.18 0.03 260)', animation: 'popIn .5s var(--ease) both' }}>
+          <img src={imageUrl} alt={prompt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px', background: 'linear-gradient(0deg, oklch(0.10 0.02 258 / 0.92), transparent)' }}>
+            <div style={{ fontSize: 13, color: 'oklch(1 0 0 / 0.92)', lineHeight: 1.45 }}>“{prompt}”</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ marginTop: 4 }}>
       <div style={{
